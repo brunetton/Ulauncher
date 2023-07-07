@@ -33,6 +33,9 @@ class AppResultItem(ResultItem):
     def get_icon(self):
         return self.record.get('icon')
 
+    def get_desktop_file(self):
+        return self.record.get('desktop_file')
+
     def on_enter(self, query):
         self._query_history.save_query(str(query), self.record.get('name'))
 

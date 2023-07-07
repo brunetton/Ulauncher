@@ -21,6 +21,7 @@ class ResultItemWidget(Gtk.EventBox):
     index = 0  # type: int
     builder = None  # type: Any
     name = ''  # type: str
+    path = ''  # type: str
     query = Query('')  # type: Query
     item_object = None  # type: Any
     item_box = None  # type: Any
@@ -39,6 +40,11 @@ class ResultItemWidget(Gtk.EventBox):
         self.set_icon(item_object.get_icon())
         self.set_description(item_object.get_description(query))
         self.set_name_highlighted()
+        try:
+            self.set_path(item_object.get_desktop_file())
+        except AttributeError:
+            # This item have no path
+            pass
 
     def set_index(self, index):
         """
@@ -114,6 +120,11 @@ class ResultItemWidget(Gtk.EventBox):
         else:
             description_obj.destroy()  # remove description label
             self.builder.get_object('item-name').set_margin_top(8)  # shift name label down to the center
+
+    def set_path(self, path: str) -> None:
+        item = self.builder.get_object('item-path')
+        item.set_text(path)
+        self.path = path
 
     def set_shortcut(self, text):
         self.builder.get_object('item-shortcut').set_text(text)
