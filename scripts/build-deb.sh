@@ -14,8 +14,8 @@ build-deb () {
 
     set -e
 
-    GPGKEY=${GPGKEY:-6BD735B0}
-    version=$(./setup.py --version)
+    # GPGKEY=${GPGKEY:-6BD735B0}
+    version=$1
     # Debian prerelease separator is "~" instead of "-" (semver prerelease separator)
     deb_version=$(echo "$version" | tr "-" "~")
 
@@ -59,8 +59,9 @@ build-deb () {
         sed -i "s/%VERSION%/$deb_version/g" debian/changelog
         sed -i "s/%RELEASE%/bionic/g" debian/changelog
         info "Building deb package"
-        dpkg-buildpackage -tc -us -sa -k$GPGKEY
-        success "ulauncher_${version}_all.deb saved to /tmp"
+        # dpkg-buildpackage -tc -us -sa -k$GPGKEY
+        dpkg-buildpackage -tc -us -uc -sa
+        success "ulauncher_${version}_all.deb saved to $tmpdir"
     elif [ "$1" = "--upload" ]; then
         if [ -z "$RELEASE" ]; then
             error "RELEASE env var is not supplied"
