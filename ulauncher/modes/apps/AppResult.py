@@ -29,6 +29,8 @@ class AppResult(Result):
             # get_executable uses Exec, which is always specified, but it will return the actual executable.
             # Sometimes the actual executable is not the app to start, but a wrappers like "env" or "sh -c"
             _executable=basename(app_info.get_string("TryExec") or app_info.get_executable() or ""),
+            # full command line
+            commandline=app_info.get_commandline()
         )
 
     @staticmethod

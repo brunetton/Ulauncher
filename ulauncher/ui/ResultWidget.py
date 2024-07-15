@@ -1,3 +1,4 @@
+import contextlib
 import logging
 from types import SimpleNamespace
 from typing import Any
@@ -64,6 +65,9 @@ class ResultWidget(Gtk.EventBox):  # type: ignore[name-defined]
         self.set_icon(load_icon_surface(result.icon, sizes.icon, self.get_scale_factor()))
         self.set_description(result.get_description(query))  # need to run even if there is no descr
         self.set_name_highlighted()
+        with contextlib.suppress(AttributeError):
+            self.set_commandline(result.commandline)
+
 
     def set_index(self, index: int):
         """
@@ -144,6 +148,10 @@ class ResultWidget(Gtk.EventBox):  # type: ignore[name-defined]
             description_obj.set_text(description)
         else:
             description_obj.destroy()  # remove description label
+
+    def set_commandline(self, commandlinepath: str) -> None:
+        item = self.builder.get_object('item-commandline')
+        item.set_text(commandlinepath)
 
     def set_shortcut(self, text):
         self.builder.get_object("item-shortcut").set_text(text)
