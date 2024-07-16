@@ -5,16 +5,16 @@ import json
 import mimetypes
 from urllib.parse import unquote
 from typing import List, Optional, cast
+import time
 import traceback
 
 import gi
 gi.require_version('Gio', '2.0')
 gi.require_version('GLib', '2.0')
 gi.require_version('Gtk', '3.0')
-gi.require_version('WebKit2', '4.0')
 
 # pylint: disable=wrong-import-position,unused-argument
-from gi.repository import Gio, Gtk, WebKit2, GLib  # type: ignore
+from gi.repository import Gio, Gtk, GLib  # type: ignore
 
 from ulauncher.api.shared.action.OpenAction import OpenAction
 from ulauncher.ui.windows.HotkeyDialog import HotkeyDialog
@@ -38,6 +38,7 @@ from ulauncher.utils.wayland import is_wayland
 from ulauncher.utils.Settings import Settings
 from ulauncher.utils.Router import Router, get_url_params
 from ulauncher.utils.AutostartPreference import AutostartPreference
+from ulauncher.utils.WebKit2 import WebKit2
 from ulauncher.ui.AppIndicator import AppIndicator
 from ulauncher.search.shortcuts.ShortcutsDb import ShortcutsDb
 from ulauncher.config import get_data_file, get_options, get_version, EXTENSIONS_DIR
@@ -97,9 +98,9 @@ class PreferencesUlauncherDialog(Gtk.Dialog, WindowHelper):
     def finish_initializing(self, builder):
         """Called while initializing this instance in __new__
 
-        finish_initalizing should be called after parsing the ui definition
+        finish_initializing should be called after parsing the ui definition
         and creating a PreferencesDialog object with it in order to
-        finish initializing the start of the new PerferencesUlauncherDialog
+        finish initializing the start of the new PreferencesUlauncherDialog
         instance.
 
         Put your initialization code in here and leave __init__ undefined.
@@ -131,24 +132,24 @@ class PreferencesUlauncherDialog(Gtk.Dialog, WindowHelper):
         """
         Initialize preferences WebView
         """
-        self.webview = WebKit2.WebView()
+        settings = WebKit2.Settings(
+            enable_developer_extras=bool(get_options().dev),
+            enable_hyperlink_auditing=False,
+            enable_page_cache=False,
+            enable_webgl=False,
+            enable_write_console_messages_to_stdout=True,
+            enable_xss_auditor=False,
+            hardware_acceleration_policy=WebKit2.HardwareAccelerationPolicy.NEVER,
+        )
+        self.webview = WebKit2.WebView(settings=settings)
         self.ui['scrolled_window'].add(self.webview)
-        opts = get_options()
         self._load_prefs_html()
-
-        web_settings = self.webview.get_settings()
-        web_settings.set_enable_developer_extras(bool(opts.dev))
-        web_settings.set_enable_xss_auditor(False)
-        web_settings.set_enable_write_console_messages_to_stdout(True)
 
         self.webview.get_context().register_uri_scheme('prefs', self.on_scheme_callback)
         self.webview.get_context().register_uri_scheme('file2', self.serve_file)
         self.webview.get_context().set_cache_model(WebKit2.CacheModel.DOCUMENT_VIEWER)  # disable caching
         self.webview.connect('button-press-event', self.webview_on_button_press_event)
         self.webview.connect('context-menu', self.webview_on_context_menu)
-
-        inspector = self.webview.get_inspector()
-        inspector.connect("attach", lambda inspector, target_view: WebKit2.WebView())
 
     ######################################
     # Overrides
@@ -193,7 +194,8 @@ class PreferencesUlauncherDialog(Gtk.Dialog, WindowHelper):
         # pylint: disable=broad-except
         try:
             params = get_url_params(scheme_request.get_uri())
-            file_path = params['path'].split("#", 1)[0]
+            file_path = params['path'].replace("null/", "/").split("#", 1)[0]
+
             mime_type = mimetypes.guess_type(file_path)[0]
             stream = Gio.file_new_for_path(file_path).read()
             scheme_request.finish(stream, -1, mime_type)
@@ -467,6 +469,10 @@ class PreferencesUlauncherDialog(Gtk.Dialog, WindowHelper):
         downloader = ExtensionDownloader.get_instance()
         ext_id = downloader.download(url)
         ExtensionRunner.get_instance().run(ext_id)
+
+        # Looping until either runner.is_running() or runner.get_extension_error() returns something would be better
+        # to avoid race condition and needless waiting
+        time.sleep(1)
 
         return self._get_all_extensions()
 

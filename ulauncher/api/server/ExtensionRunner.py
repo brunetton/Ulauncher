@@ -26,7 +26,6 @@ ExtRunError = TypedDict('ExtRunError', {
 class ExtRunErrorName(Enum):
     NoExtensionsFlag = 'NoExtensionsFlag'
     Terminated = 'Terminated'
-    ExitedInstantly = 'ExitedInstantly'
     Exited = 'Exited'
     MissingModule = 'MissingModule'
 
@@ -101,7 +100,6 @@ class ExtensionRunner:
             proc = Popen(cmd, env=env, stderr=PIPE)
             lasterr = ""
             logger.info('Extension "%s" started. PID %s', extension_id, proc.pid)
-            self.extension_procs[extension_id] = proc
             self.unset_extension_error(extension_id)
 
             while proc.poll() is None:
@@ -112,21 +110,18 @@ class ExtensionRunner:
 
             code = proc.returncode
 
-            if code <= 0:
+            if code == 0:
+                self.extension_procs[extension_id] = proc
+            else:
                 error_msg = 'Extension "%s" was terminated with code %s' % (extension_id, code)
                 logger.error(error_msg)
                 self.set_extension_error(extension_id, ExtRunErrorName.Terminated, error_msg)
-                try:
-                    del self.extension_procs[extension_id]
-                except KeyError:
-                    pass
-
                 break
 
             if time() - t_start < 1:
                 error_msg = 'Extension "%s" exited instantly with code %s' % (extension_id, code)
                 logger.error(error_msg)
-                self.set_extension_error(extension_id, ExtRunErrorName.ExitedInstantly, error_msg)
+                self.set_extension_error(extension_id, ExtRunErrorName.Terminated, error_msg)
                 error_info = ProcessErrorExtractor(lasterr)
                 logger.error('Extension "%s" failed with an error: %s', extension_id, error_info.error)
                 if error_info.is_import_error():
