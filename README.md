@@ -28,6 +28,5 @@ sudo ./ul build-deb "5+with-paths" --deb
 ```bash
 git fetch v6   # better be on the good branch
 apt install dh-python python3-all gobject-introspection python3-distutils-extra
-./ul build-preferences  # Will call yarn and Node
 sudo ./ul build-deb "6+with-paths" --deb
 ```
