@@ -6,3 +6,9 @@ mypy==0.812
 mypy_extensions==0.4.3
 flake8==5.0.4
 PyGObject-stubs==2.0.0
+dbus-python
+pyxdg
+python-Levenshtein
+pyinotify
+websocket-client
+htmlentities
