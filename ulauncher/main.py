@@ -45,15 +45,17 @@ def main(is_dev=False):
 
         sandbox.run_setup("setup.py", ["build_prefs"])
 
+    logging_level = logging.DEBUG if (is_dev or options.verbose) else logging.INFO
+
     # Set up global logging for stdout and file
     file_handler = logging.FileHandler(f"{PATHS.STATE}/last.log", mode="w+")
     stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(logging.DEBUG if options.verbose else logging.WARNING)
+    stream_handler.setLevel(logging_level)
     stream_handler.setFormatter(ColoredFormatter())
 
     logging.root.handlers = []
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging_level,
         format="%(asctime)s | %(levelname)s | %(message)s | %(module)s.%(funcName)s():%(lineno)s",
         handlers=[file_handler, stream_handler],
     )
@@ -62,6 +64,8 @@ def main(is_dev=False):
     logger = logging.getLogger()
 
     logger.info("Ulauncher version %s", VERSION)
+    if is_dev:
+        logger.info("Developpement version")
     logger.info("Extension API version %s", API_VERSION)
     logger.info("GTK+ %s.%s.%s", Gtk.get_major_version(), Gtk.get_minor_version(), Gtk.get_micro_version())
     logger.info("PyGObject+ %i.%i.%i", *gi.version_info)
